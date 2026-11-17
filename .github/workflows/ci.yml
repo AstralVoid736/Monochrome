@@ -37,5 +37,5 @@ jobs:
         run: bash scripts/build.sh --universal
       - name: Verify architectures and local signature
         run: |
-          xcrun lipo -verify_arch arm64 x86_64 dist/Monochrome.app/Contents/MacOS/Monochrome
+          xcrun lipo dist/Monochrome.app/Contents/MacOS/Monochrome -verify_arch arm64 x86_64
           codesign --verify --strict dist/Monochrome.app
