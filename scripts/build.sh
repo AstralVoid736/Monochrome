@@ -1,0 +1,26 @@
+#!/bin/bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+MODE="${1:---native}"
+if [[ "$MODE" != "--native" && "$MODE" != "--universal" ]]; then
+  printf 'Usage: bash scripts/build.sh [--native|--universal]\n' >&2; exit 2
+fi
+mkdir -p .build dist/Monochrome.app/Contents/MacOS
+SOURCES=(Sources/GrayscaleController.swift Sources/NativeGrayscaleBackend.swift Sources/StatusBarController.swift Sources/MonochromeApp.swift)
+compile() {
+  xcrun swiftc -O -whole-module-optimization -warnings-as-errors -target "$1-apple-macos13.0" "${SOURCES[@]}" -framework AppKit -o ".build/Monochrome-$1"
+}
+if [[ "$MODE" == "--universal" ]]; then
+  compile arm64
+  compile x86_64
+  xcrun lipo -create .build/Monochrome-arm64 .build/Monochrome-x86_64 -output dist/Monochrome.app/Contents/MacOS/Monochrome
+else
+  ARCH="$(uname -m)"
+  compile "$ARCH"
+  cp ".build/Monochrome-$ARCH" dist/Monochrome.app/Contents/MacOS/Monochrome
+fi
+cp Resources/Info.plist dist/Monochrome.app/Contents/Info.plist
+codesign --force --sign - --timestamp=none dist/Monochrome.app
+codesign --verify --strict dist/Monochrome.app
+printf 'Built %s/dist/Monochrome.app (%s; ad-hoc signed, not notarized)\n' "$ROOT" "$MODE"

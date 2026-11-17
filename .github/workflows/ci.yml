@@ -1,0 +1,41 @@
+name: macOS build and tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcrun swiftc --version
+      - name: Validate shell scripts and bundle metadata
+        run: |
+          bash -n scripts/build.sh scripts/test.sh
+          plutil -lint Resources/Info.plist
+      - name: Test controller and AppKit controls without changing the display
+        run: bash scripts/test.sh
+      - name: Build universal app
+        run: bash scripts/build.sh --universal
+      - name: Verify architectures and local signature
+        run: |
+          xcrun lipo -verify_arch arm64 x86_64 dist/Monochrome.app/Contents/MacOS/Monochrome
+          codesign --verify --strict dist/Monochrome.app
