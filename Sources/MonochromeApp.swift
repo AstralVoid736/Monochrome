@@ -9,12 +9,22 @@ private struct UnavailableBackend: GrayscaleBackend {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusBar: StatusBarController?
+    private var hotKey: HotKeyController?
     func applicationDidFinishLaunching(_ notification: Notification) {
         let backend: any GrayscaleBackend
         do { backend = try NativeGrayscaleBackend() }
         catch { backend = UnavailableBackend(reason: error) }
-        statusBar = StatusBarController(controller: GrayscaleController(backend: backend))
+        let registrar = NativeHotKeyRegistrar()
+        let hotKey = HotKeyController(register: registrar.register)
+        registrar.onRelease = { [weak hotKey] id in hotKey?.receiveRelease(id) ?? false }
+        let statusBar = StatusBarController(controller: GrayscaleController(backend: backend), hotKey: hotKey)
+        self.statusBar = statusBar
+        self.hotKey = hotKey
+        hotKey.onToggle = { [weak statusBar] in statusBar?.toggleFromHotKey() }
+        hotKey.start()
     }
+
+    func applicationWillTerminate(_ notification: Notification) { hotKey?.stop() }
 }
 
 @main

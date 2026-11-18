@@ -10,7 +10,9 @@ xcrun swiftc -warnings-as-errors Sources/SingleInstanceLock.swift Tests/SingleIn
 .build/single-instance-tests
 xcrun swiftc -warnings-as-errors Sources/GrayscaleController.swift Tests/ControllerTests.swift -o .build/controller-tests
 .build/controller-tests
-xcrun swiftc -warnings-as-errors Sources/GrayscaleController.swift Sources/StatusBarController.swift Tests/UITests.swift -o .build/ui-tests
+xcrun swiftc -warnings-as-errors Sources/HotKeyController.swift Tests/HotKeyTests.swift -o .build/hotkey-tests
+.build/hotkey-tests
+xcrun swiftc -warnings-as-errors Sources/GrayscaleController.swift Sources/HotKeyController.swift Sources/StatusBarController.swift Tests/UITests.swift -o .build/ui-tests
 .build/ui-tests
 if [[ "$MODE" == "--native" ]]; then
   printf 'Native test temporarily changes your real display filter and restores its snapshot.\n'

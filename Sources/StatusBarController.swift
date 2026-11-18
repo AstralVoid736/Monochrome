@@ -6,10 +6,15 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     let menu = NSMenu()
     private let controller: GrayscaleController
     private let strings: Bundle
+    private let hotKey: HotKeyController?
+    private let shortcutStatus = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let shortcutMenu = NSMenu()
+    private var lastToggleError: String?
 
-    init(controller: GrayscaleController, strings: Bundle = .main) {
+    init(controller: GrayscaleController, strings: Bundle = .main, hotKey: HotKeyController? = nil) {
         self.controller = controller
         self.strings = strings
+        self.hotKey = hotKey
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
         let title = NSMenuItem(title: "Monochrome", action: nil, keyEquivalent: "")
@@ -23,6 +28,21 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         let hint = NSMenuItem(title: text("Left-click to switch · right-click for menu"), action: nil, keyEquivalent: "")
         hint.isEnabled = false
         menu.addItem(hint)
+        if hotKey != nil {
+            let shortcutItem = NSMenuItem(title: text("Keyboard Shortcut"), action: nil, keyEquivalent: "")
+            shortcutMenu.autoenablesItems = false
+            shortcutStatus.isEnabled = false
+            shortcutMenu.addItem(shortcutStatus)
+            shortcutMenu.addItem(.separator())
+            for (index, choice) in HotKeyChoice.allCases.enumerated() {
+                let item = NSMenuItem(title: text(choice.label), action: #selector(selectShortcut(_:)), keyEquivalent: "")
+                item.target = self
+                item.tag = index
+                shortcutMenu.addItem(item)
+            }
+            shortcutItem.submenu = shortcutMenu
+            menu.addItem(shortcutItem)
+        }
         menu.addItem(.separator())
         let aboutItem = NSMenuItem(title: text("About Monochrome…"), action: #selector(about), keyEquivalent: "")
         aboutItem.target = self
@@ -42,6 +62,12 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) { refresh() }
+
+    @objc private func selectShortcut(_ sender: NSMenuItem) {
+        guard HotKeyChoice.allCases.indices.contains(sender.tag) else { return }
+        hotKey?.select(HotKeyChoice.allCases[sender.tag])
+        refresh()
+    }
 
     private func text(_ english: String) -> String {
         strings.localizedString(forKey: english, value: english, table: nil)
@@ -80,6 +106,23 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
         button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Monochrome")
         button.image?.isTemplate = true
+        if let hotKey {
+            let status = String(format: text("Active: %@"), text(hotKey.active.label))
+            switch hotKey.failure {
+            case .occupied: shortcutStatus.title = String(format: text("Shortcut in use. %@"), status)
+            case .unavailable: shortcutStatus.title = String(format: text("Could not register shortcut. %@"), status)
+            case nil: shortcutStatus.title = status
+            }
+            for (choice, item) in zip(HotKeyChoice.allCases, shortcutMenu.items.dropFirst(2)) {
+                item.state = choice == hotKey.active ? .on : .off
+            }
+            if hotKey.active != .off {
+                button.toolTip = [button.toolTip, String(format: text("Shortcut: %@"), hotKey.active.label)].compactMap { $0 }.joined(separator: "\n")
+            }
+        }
+        if let lastToggleError {
+            button.toolTip = [button.toolTip, lastToggleError].compactMap { $0 }.joined(separator: "\n")
+        }
     }
 
     @objc private func statusButtonPressed() {
@@ -89,12 +132,19 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         } else { toggle() }
     }
 
-    @objc private func toggle() {
+    @objc private func toggle() { switchDisplay(showAlert: true) }
+
+    func toggleFromHotKey() { switchDisplay(showAlert: false) }
+
+    private func switchDisplay(showAlert: Bool) {
         do {
             try controller.toggle()
+            lastToggleError = nil
             refresh()
         } catch {
+            lastToggleError = error.localizedDescription
             refresh()
+            guard showAlert else { return }
             let alert = NSAlert()
             alert.messageText = text("Could not switch the display")
             alert.informativeText = error.localizedDescription

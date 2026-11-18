@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0-alpha.1 (build 3)
+
+- Add a system-wide grayscale shortcut (`Control–Command–1` by default). The menu can switch it to `Control–Command–2` or `Control–Command–3`, or turn it off.
+- Keep the previous working shortcut when macOS refuses a replacement. The app does not monitor ordinary keystrokes.
+
 ## 0.1.1-alpha.1
 
 The bundle reports version 0.1.1, build 2.

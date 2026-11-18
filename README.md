@@ -1,10 +1,10 @@
 # Monochrome
 
-**Your Mac. Fewer colors. One click.**
+**Grayscale for your Mac, with a click or a shortcut.**
 
 A small native macOS menu bar utility that switches the entire display between color and grayscale. No main window. No Dock icon. No Electron.
 
-[Русский](README.ru.md) · [Download alpha](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.1.1-alpha.1) · [Report a bug](https://github.com/AstralVoid736/Monochrome/issues/new/choose)
+[Русский](README.ru.md) · [Download alpha](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.2.0-alpha.1) · [Report a bug](https://github.com/AstralVoid736/Monochrome/issues/new/choose)
 
 ![Animated illustration: click the menu bar circle to switch to grayscale, then click it again to restore color](docs/assets/demo.gif)
 
@@ -12,9 +12,9 @@ A small native macOS menu bar utility that switches the entire display between c
 
 ## Download and use
 
-1. Open the [release page](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.1.1-alpha.1) and download **`Monochrome-0.1.1-universal.zip`**, not GitHub's “Source code” archive.
-2. Quit version 0.1.0 if it is running. Unzip the download and open `Monochrome.app`.
-3. **Left-click the circle in the menu bar** to switch modes. **Right-click** for the menu and Quit.
+1. Download **`Monochrome-0.2.0-universal.zip`** from the [release page](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.2.0-alpha.1), not GitHub's “Source code” archive.
+2. Quit any older copy first. Unzip the download and open `Monochrome.app`.
+3. Press **Control + Command + 1** or click the circle in the menu bar to switch modes. Right-click the circle for the menu and Quit.
 
 The app does not change the filter at startup. **Quitting leaves the current system filter in place.** Switch back to color before quitting, or open the app again to switch back.
 
@@ -28,13 +28,15 @@ The experimental GitHub download is not notarized and can fail macOS's Gatekeepe
 - Refuses to replace another active accessibility color filter.
 - Updates its icon after its own actions and when the menu opens. A change made in System Settings can leave the icon stale until then.
 
-Version 0.1.1 prevents a second copy of itself from adding another menu bar icon, even when launched from a different folder. Its interface follows your macOS language preferences for English or Russian.
+Version 0.1.1 and later prevent a second copy of the app from adding another menu bar icon, even when launched from a different folder. The interface follows your macOS language preferences for English or Russian.
+
+Open **Keyboard Shortcut** in the right-click menu to choose `Control–Command–2`, `Control–Command–3`, or **Off**. The choice is saved. If macOS refuses a replacement, Monochrome keeps the current binding and shows the problem in the menu.
 
 ## Compatibility
 
 | Item | Status |
 | --- | --- |
-| Apple Silicon / macOS 15.6 | Native filter tests and a two-copy launch test with the 0.1.1 app |
+| Apple Silicon / macOS 15.6 | Display filter and global shortcut tested; fullscreen shortcut confirmed by a user |
 | Intel | Included in the universal binary; not run on physical Intel hardware |
 | Minimum bundle target | macOS 13.0; not a promise that every later release works |
 | Sleep/wake, multiple displays | Not separately validated |

@@ -11,5 +11,11 @@
 "Color switching unavailable" = "Переключение недоступно";
 "Could not switch the display" = "Не удалось переключить экран";
 "OK" = "Понятно";
+"Keyboard Shortcut" = "Горячая клавиша";
+"Off" = "Выключено";
+"Active: %@" = "Текущее сочетание: %@";
+"Shortcut in use. %@" = "Сочетание занято. %@";
+"Could not register shortcut. %@" = "Не удалось назначить сочетание. %@";
+"Shortcut: %@" = "Горячая клавиша: %@";
 "Close" = "Закрыть";
 "Left-click the menu bar icon to switch between color and grayscale. Right-click to open the menu. Quitting does not restore color.\n\nMonochrome uses undocumented macOS APIs and may not work on future versions." = "Левый клик по значку переключает экран между цветом и оттенками серого. Правый клик открывает меню. Выход не возвращает цвета.\n\nMonochrome использует недокументированные API macOS и может не работать на будущих версиях.";
