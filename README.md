@@ -4,21 +4,21 @@
 
 A small native macOS menu bar utility that switches the entire display between color and grayscale. No main window. No Dock icon. No Electron.
 
-[Русский](README.ru.md) · [Download alpha](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.1.0-alpha.1) · [Report a bug](https://github.com/AstralVoid736/Monochrome/issues/new/choose)
+[Русский](README.ru.md) · [Download alpha](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.1.1-alpha.1) · [Report a bug](https://github.com/AstralVoid736/Monochrome/issues/new/choose)
 
-![Illustration of color switching to grayscale, not a screenshot](docs/assets/overview.svg)
+![Animated illustration: click the menu bar circle to switch to grayscale, then click it again to restore color](docs/assets/demo.gif)
 
 > **Early alpha.** Uses undocumented macOS APIs. The download is ad-hoc signed, **not notarized by Apple**. Tested on Apple Silicon with macOS 15.6; other systems need validation.
 
 ## Download and use
 
-1. Open the [release page](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.1.0-alpha.1) and download **`Monochrome-0.1.0-universal.zip`** — not GitHub's “Source code” archive.
-2. Unzip it. Move `Monochrome.app` to Applications if you want to keep it, then open it.
+1. Open the [release page](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.1.1-alpha.1) and download **`Monochrome-0.1.1-universal.zip`**, not GitHub's “Source code” archive.
+2. Quit version 0.1.0 if it is running. Unzip the download and open `Monochrome.app`.
 3. **Left-click the circle in the menu bar** to switch modes. **Right-click** for the menu and Quit.
 
 The app does not change the filter at startup. **Quitting leaves the current system filter in place.** Switch back to color before quitting, or open the app again to switch back.
 
-If macOS blocks this experimental download, do not disable Gatekeeper globally. You can build locally from source instead. There is no installer, account, subscription or automatic startup.
+The experimental GitHub download is not notarized and can fail macOS's Gatekeeper check even when its checksum and ad-hoc signature are valid. Do not disable Gatekeeper. Build locally from source instead if the download is blocked. There is no installer, account, subscription or automatic startup.
 
 ## Small by design
 
@@ -28,13 +28,13 @@ If macOS blocks this experimental download, do not disable Gatekeeper globally. 
 - Refuses to replace another active accessibility color filter.
 - Updates its icon after its own actions and when the menu opens. A change made in System Settings can leave the icon stale until then.
 
-The current app interface is in Russian; the project documentation is available in English and Russian. Grayscale is a display preference, not a proven productivity treatment.
+Version 0.1.1 prevents a second copy of itself from adding another menu bar icon, even when launched from a different folder. Its interface follows your macOS language preferences for English or Russian.
 
 ## Compatibility
 
 | Item | Status |
 | --- | --- |
-| Apple Silicon / macOS 15.6 | Local native tests, real status-button AXPress and a user's successful-use report |
+| Apple Silicon / macOS 15.6 | Native filter tests and a two-copy launch test with the 0.1.1 app |
 | Intel | Included in the universal binary; not run on physical Intel hardware |
 | Minimum bundle target | macOS 13.0; not a promise that every later release works |
 | Sleep/wake, multiple displays | Not separately validated |
@@ -61,7 +61,7 @@ The output is `dist/Monochrome.app`, locally ad-hoc signed. Building does not in
 ## Test
 
 ```bash
-bash scripts/test.sh              # controller tests + programmatic AppKit controls
+bash scripts/test.sh              # single-instance, controller and AppKit checks
 ```
 
 The standard tests do **not** change the real display filter. CI runs these checks and a universal build. A successful CI build is not physical display validation.

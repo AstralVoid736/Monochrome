@@ -6,6 +6,8 @@ if [[ "$MODE" != "--unit" && "$MODE" != "--native" ]]; then
   printf 'Usage: bash scripts/test.sh [--unit|--native]\n' >&2; exit 2
 fi
 mkdir -p .build
+xcrun swiftc -warnings-as-errors Sources/SingleInstanceLock.swift Tests/SingleInstanceTests.swift -o .build/single-instance-tests
+.build/single-instance-tests
 xcrun swiftc -warnings-as-errors Sources/GrayscaleController.swift Tests/ControllerTests.swift -o .build/controller-tests
 .build/controller-tests
 xcrun swiftc -warnings-as-errors Sources/GrayscaleController.swift Sources/StatusBarController.swift Tests/UITests.swift -o .build/ui-tests

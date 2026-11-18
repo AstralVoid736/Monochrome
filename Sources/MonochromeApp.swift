@@ -21,10 +21,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct MonochromeApp {
     @MainActor
     static func main() {
-        let app = NSApplication.shared
-        app.setActivationPolicy(.accessory)
-        let delegate = AppDelegate()
-        app.delegate = delegate
-        withExtendedLifetime(delegate) { app.run() }
+        do {
+            guard let lock = try SingleInstanceLock.acquire() else { return }
+            let app = NSApplication.shared
+            app.setActivationPolicy(.accessory)
+            let delegate = AppDelegate()
+            app.delegate = delegate
+            withExtendedLifetime((lock, delegate)) { app.run() }
+        } catch {
+            NSLog("Monochrome could not acquire its startup lock: %@", error.localizedDescription)
+            exit(EXIT_FAILURE)
+        }
     }
 }

@@ -1,0 +1,15 @@
+"Enable Grayscale" = "Включить оттенки серого";
+"Restore Color" = "Вернуть цвета";
+"Left-click to switch · right-click for menu" = "Левый клик — переключить · правый — меню";
+"About Monochrome…" = "О Monochrome…";
+"Quit Monochrome" = "Выйти из Monochrome";
+"Monochrome — toggle grayscale" = "Monochrome — переключение оттенков серого";
+"Monochrome: grayscale. Click to restore color. Right-click for menu." = "Monochrome: чёрно-белый экран. Клик — вернуть цвета. Правый клик — меню.";
+"Monochrome: color. Click to enable grayscale. Right-click for menu." = "Monochrome: цветной экран. Клик — включить оттенки серого. Правый клик — меню.";
+"Another color filter is active" = "Другой цветовой фильтр уже включён";
+"Monochrome: another system filter is active and will not be replaced. Right-click for menu." = "Monochrome: включён другой системный фильтр; он не будет заменён. Правый клик — меню.";
+"Color switching unavailable" = "Переключение недоступно";
+"Could not switch the display" = "Не удалось переключить экран";
+"OK" = "Понятно";
+"Close" = "Закрыть";
+"Left-click the menu bar icon to switch between color and grayscale. Right-click to open the menu. Quitting does not restore color.\n\nMonochrome uses undocumented macOS APIs and may not work on future versions." = "Левый клик по значку переключает экран между цветом и оттенками серого. Правый клик открывает меню. Выход не возвращает цвета.\n\nMonochrome использует недокументированные API macOS и может не работать на будущих версиях.";
