@@ -12,3 +12,5 @@ PROJECT_STATE.md
 *.p8
 *.pem
 *.key
+/spikes/**/bin/
+/spikes/**/obj/
