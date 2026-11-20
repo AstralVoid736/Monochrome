@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-alpha.1 (build 6)
+
+- Add a single 25-minute grayscale session. The timer restores color, can be ended early, and is cancelled by a successful manual toggle or by quitting the app.
+- Add an opt-in **Launch at Login** menu item using macOS Login Items. Starting the app does not change the active display filter.
+- Keep the color toggle and timer at the top of the compact menu. Move Launch at Login and Keyboard Shortcut under **Settings**.
+
 ## 0.2.0-alpha.1 (build 3)
 
 - Add a system-wide grayscale shortcut (`Control–Command–1` by default). The menu can switch it to `Control–Command–2` or `Control–Command–3`, or turn it off.

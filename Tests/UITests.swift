@@ -1,10 +1,34 @@
 import AppKit
+import ServiceManagement
 
 final class UIBackend: GrayscaleBackend {
     var value: FilterState = .color
     var writes = 0
     func readState() throws -> FilterState { value }
     func writeGrayscale(_ enabled: Bool) throws { writes += 1; value = enabled ? .grayscale : .color }
+}
+
+@MainActor
+final class TestLoginItem: LoginItemService {
+    enum Rejected: Error { case yes }
+    var status: SMAppService.Status = .notRegistered
+    var registeredStatus: SMAppService.Status = .enabled
+    var reject = false
+    private(set) var registrations = 0
+    private(set) var removals = 0
+    private(set) var settingsOpens = 0
+
+    func register() throws {
+        registrations += 1
+        if reject { throw Rejected.yes }
+        status = registeredStatus
+    }
+    func unregister() throws {
+        removals += 1
+        if reject { throw Rejected.yes }
+        status = .notRegistered
+    }
+    func openSettings() { settingsOpens += 1 }
 }
 
 @main
@@ -32,12 +56,57 @@ struct UITests {
                 if choice == .three { throw HotKeyError.occupied }
                 return {}
             }
-            let ui = StatusBarController(controller: GrayscaleController(backend: backend), strings: bundle, hotKey: hotKey)
+            let loginItem = TestLoginItem()
+            let ui = StatusBarController(controller: GrayscaleController(backend: backend), strings: bundle, hotKey: hotKey,
+                                         loginItem: loginItem)
             defer { NSStatusBar.system.removeStatusItem(ui.statusItem) }
             hotKey.onToggle = { [weak ui] in ui?.toggleFromHotKey() }
             hotKey.start()
-            ui.menuWillOpen(ui.menu)
+            ui.menu.delegate?.menuNeedsUpdate?(ui.menu)
             require(backend.writes == 0, "launch must never change the display")
+            let settingsTitle = locale == "ru" ? "Настройки" : "Settings"
+            guard let settingsItem = ui.menu.items.first(where: { $0.title == settingsTitle }),
+                  settingsItem.isEnabled, let settings = settingsItem.submenu else {
+                print("FAIL: compact menu must have an enabled Settings submenu: \(locale)"); exit(1)
+            }
+            let loginTitle = locale == "ru" ? "Запускать при входе" : "Launch at Login"
+            let start = locale == "ru" ? "Оттенки серого на 25 минут" : "Grayscale for 25 Minutes"
+            let about = locale == "ru" ? "О Monochrome…" : "About Monochrome…"
+            let visibleRows = ui.menu.items.filter { !$0.isHidden && !$0.isSeparatorItem }.map(\.title)
+            require(visibleRows == [enable, start, settingsTitle, about, quit], "top-level menu keeps just the two quick actions, settings, about, and quit: \(locale)")
+            settings.delegate?.menuNeedsUpdate?(settings)
+            guard let loginIndex = settings.items.firstIndex(where: { $0.title == loginTitle && $0.action != nil }) else {
+                print("FAIL: settings must expose the launch-at-login action: \(locale)"); exit(1)
+            }
+            let loginAction = settings.items[loginIndex]
+            require(loginAction.isEnabled && loginAction.state == .off && loginItem.registrations == 0 && loginItem.removals == 0,
+                    "launch and first menu open do not register the app or pretend it is registered")
+            settings.performActionForItem(at: loginIndex)
+            require(loginItem.registrations == 1 && loginAction.state == .on, "a menu action registers and reads back enabled status")
+            let failure = locale == "ru" ? "Не удалось изменить автозапуск" : "Could Not Change Launch at Login"
+            loginItem.reject = true
+            settings.performActionForItem(at: loginIndex)
+            require(loginItem.removals == 1 && loginAction.state == .on && settings.items.contains { $0.title == failure && !$0.isHidden },
+                    "failure to disable leaves a check mark and a localized error")
+            loginItem.reject = false
+            settings.performActionForItem(at: loginIndex)
+            require(loginItem.removals == 2 && loginAction.state == .off && !settings.items.contains { $0.title == failure && !$0.isHidden },
+                    "an explicit retry can disable login launch and clear the error")
+            loginItem.registeredStatus = .requiresApproval
+            settings.performActionForItem(at: loginIndex)
+            let approval = locale == "ru" ? "Автозапуск — открыть системные настройки…" : "Launch at Login — Review in System Settings…"
+            require(loginItem.registrations == 2 && loginItem.settingsOpens == 0 && loginAction.state == .mixed && loginAction.title == approval,
+                    "pending approval shows a localized route to Settings instead of claiming success")
+            settings.performActionForItem(at: loginIndex)
+            require(loginItem.settingsOpens == 1 && loginItem.registrations == 2 && loginItem.removals == 2,
+                    "review action only opens Settings and never overrides the OS decision")
+            loginItem.status = .enabled
+            settings.delegate?.menuNeedsUpdate?(settings)
+            require(loginAction.state == .on && loginAction.title == loginTitle, "opening Settings reads the system change")
+            loginItem.status = .notFound
+            ui.menu.delegate?.menuNeedsUpdate?(ui.menu)
+            require(!loginAction.isEnabled && loginAction.state == .off, "unavailable service must not offer a working toggle")
+            require(backend.writes == 0, "login options do not change the display")
             require(ui.menu.items.contains { $0.title == enable }, "menu must localize the toggle: \(locale)")
             require(ui.menu.items.contains { $0.title == quit && $0.action != nil }, "menu must expose a localized Quit action: \(locale)")
             ui.statusItem.button?.performClick(nil)
@@ -46,7 +115,7 @@ struct UITests {
             guard let index = ui.menu.items.firstIndex(where: { $0.title == restore }) else { print("FAIL: reverse action missing"); exit(1) }
             ui.menu.performActionForItem(at: index)
             require(backend.value == .color && backend.writes == 2, "native menu target/action must restore color")
-            guard let shortcuts = ui.menu.items.first(where: { $0.title == shortcutTitle })?.submenu else {
+            guard let shortcuts = settings.items.first(where: { $0.title == shortcutTitle })?.submenu else {
                 print("FAIL: shortcut chooser missing: \(locale)"); exit(1)
             }
             require(shortcuts.item(at: 2)?.state == .on, "default shortcut must be checked: \(locale)")
@@ -62,7 +131,22 @@ struct UITests {
             backend.value = .otherFilter(4)
             ui.toggleFromHotKey()
             require(backend.value == .otherFilter(4) && backend.writes == 3, "hotkey cannot replace another filter")
-            print("PASS: \(locale) interface; native status-button and menu actions; no startup write")
+            let end = locale == "ru" ? "Завершить таймер и вернуть цвета" : "End Timer and Restore Color"
+            guard let timerIndex = ui.menu.items.firstIndex(where: { $0.title == start }) else {
+                print("FAIL: timer action missing: \(locale)"); exit(1)
+            }
+            require(ui.menu.item(at: timerIndex)?.isEnabled == false, "timer cannot start over another filter")
+            backend.value = .color
+            ui.menu.delegate?.menuNeedsUpdate?(ui.menu)
+            ui.menu.performActionForItem(at: timerIndex)
+            require(backend.value == .grayscale && ui.menu.item(at: timerIndex)?.title == end, "localized timer action starts the mode")
+            ui.menu.performActionForItem(at: timerIndex)
+            require(backend.value == .color && ui.menu.item(at: timerIndex)?.title == start, "ending the timer returns the color and restores the menu item")
+            ui.menu.performActionForItem(at: timerIndex)
+            ui.toggleFromHotKey()
+            require(backend.value == .color && ui.menu.item(at: timerIndex)?.title == start, "shortcut cancels the timer on a manual toggle")
+            print("PASS: \(locale) compact menu layout, native status-button and Settings actions; no startup write")
+            print("PASS: \(locale) launch-at-login controls with a substituted system service; no OS login settings changed")
         }
         print("Input coverage: AppKit programmatic control actions; not mouse/AX interaction")
     }

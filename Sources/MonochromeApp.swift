@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 private struct UnavailableBackend: GrayscaleBackend {
     let reason: Error
@@ -17,14 +18,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let registrar = NativeHotKeyRegistrar()
         let hotKey = HotKeyController(register: registrar.register)
         registrar.onRelease = { [weak hotKey] id in hotKey?.receiveRelease(id) ?? false }
-        let statusBar = StatusBarController(controller: GrayscaleController(backend: backend), hotKey: hotKey)
+        let statusBar = StatusBarController(controller: GrayscaleController(backend: backend), hotKey: hotKey,
+                                            loginItem: SMAppService.mainApp)
         self.statusBar = statusBar
         self.hotKey = hotKey
         hotKey.onToggle = { [weak statusBar] in statusBar?.toggleFromHotKey() }
         hotKey.start()
     }
 
-    func applicationWillTerminate(_ notification: Notification) { hotKey?.stop() }
+    func applicationWillTerminate(_ notification: Notification) {
+        statusBar?.stopTimer()
+        hotKey?.stop()
+    }
 }
 
 @main

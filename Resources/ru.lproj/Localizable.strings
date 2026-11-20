@@ -1,7 +1,11 @@
 "Enable Grayscale" = "Включить оттенки серого";
 "Restore Color" = "Вернуть цвета";
-"Left-click to switch · right-click for menu" = "Левый клик — переключить · правый — меню";
+"Settings" = "Настройки";
 "About Monochrome…" = "О Monochrome…";
+"Launch at Login" = "Запускать при входе";
+"Launch at Login — Review in System Settings…" = "Автозапуск — открыть системные настройки…";
+"Launch at Login Unavailable" = "Автозапуск недоступен";
+"Could Not Change Launch at Login" = "Не удалось изменить автозапуск";
 "Quit Monochrome" = "Выйти из Monochrome";
 "Monochrome — toggle grayscale" = "Monochrome — переключение оттенков серого";
 "Monochrome: grayscale. Click to restore color. Right-click for menu." = "Monochrome: чёрно-белый экран. Клик — вернуть цвета. Правый клик — меню.";
@@ -17,5 +21,11 @@
 "Shortcut in use. %@" = "Сочетание занято. %@";
 "Could not register shortcut. %@" = "Не удалось назначить сочетание. %@";
 "Shortcut: %@" = "Горячая клавиша: %@";
+"Grayscale for 25 Minutes" = "Оттенки серого на 25 минут";
+"End Timer and Restore Color" = "Завершить таймер и вернуть цвета";
+"Time left (min): %lld" = "Осталось минут: %lld";
+"Could not start the timer." = "Не удалось запустить таймер.";
+"Could not end the timer." = "Не удалось завершить таймер.";
+"The timer ended, but color could not be restored." = "Таймер закончился, но вернуть цвета не удалось.";
 "Close" = "Закрыть";
 "Left-click the menu bar icon to switch between color and grayscale. Right-click to open the menu. Quitting does not restore color.\n\nMonochrome uses undocumented macOS APIs and may not work on future versions." = "Левый клик по значку переключает экран между цветом и оттенками серого. Правый клик открывает меню. Выход не возвращает цвета.\n\nMonochrome использует недокументированные API macOS и может не работать на будущих версиях.";

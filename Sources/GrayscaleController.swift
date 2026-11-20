@@ -35,8 +35,19 @@ final class GrayscaleController {
     func toggle() throws -> FilterState {
         let before = try backend.readState()
         if case .otherFilter = before { throw GrayscaleError.conflictingFilter }
-        let expected: FilterState = before == .grayscale ? .color : .grayscale
-        try backend.writeGrayscale(expected == .grayscale)
+        return try applyGrayscale(before == .color)
+    }
+
+    /// Leaves another filter intact, and changes nothing if the expected mode is no longer active.
+    func setGrayscale(_ enabled: Bool, ifEnabled current: Bool) throws -> Bool {
+        guard enabled != current, try state() == (current ? .grayscale : .color) else { return false }
+        _ = try applyGrayscale(enabled)
+        return true
+    }
+
+    private func applyGrayscale(_ enabled: Bool) throws -> FilterState {
+        let expected: FilterState = enabled ? .grayscale : .color
+        try backend.writeGrayscale(enabled)
         let observed = try backend.readState()
         guard observed == expected else { throw GrayscaleError.verificationFailed }
         return observed

@@ -12,4 +12,4 @@ Publishing is a maintainer action, not an automatic side effect of CI.
 8. Create an explicit **prerelease** for alpha software, with signing/API/compatibility caveats and no unsupported platform claims.
 9. Read back repository visibility, commit, tag and release; download the assets and compare hashes. A successful upload command is not verification.
 
-Developer ID signing and notarization require a separately configured Apple developer workflow. Never commit signing keys or add a Gatekeeper-disable command as a workaround.
+Developer ID signing and notarization require a separately configured Apple developer workflow. See the [signing and notarization checklist](SIGNING.md). Never commit signing keys or disable Gatekeeper as a workaround.
