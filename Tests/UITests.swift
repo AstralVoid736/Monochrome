@@ -148,6 +148,59 @@ struct UITests {
             print("PASS: \(locale) compact menu layout, native status-button and Settings actions; no startup write")
             print("PASS: \(locale) launch-at-login controls with a substituted system service; no OS login settings changed")
         }
+        exerciseEvening(strings: .main, localized: false, require: require)
+        exerciseEvening(strings: russian, localized: true, require: require)
         print("Input coverage: AppKit programmatic control actions; not mouse/AX interaction")
+    }
+
+    @MainActor private static func exerciseEvening(strings: Bundle, localized: Bool, require: (Bool, String) -> Void) {
+        let backend = UIBackend()
+        let display = GrayscaleController(backend: backend)
+        let suite = "Monochrome.EveningMenuTests.\(UUID())"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        func state(_ enabled: Bool) -> NightShiftState {
+            NightShiftState(enabled: enabled, mode: 0, schedule: [0,0,0,0], strength: 0.5, canActivate: true)
+        }
+        var warmth = state(false)
+        var warmAvailable = true
+        let evening = EveningController(defaults: defaults, grayscale: { try display.state() == .grayscale }, writeGray: { on, old in
+            guard try display.setGrayscale(on, ifEnabled: old) else { throw NightShiftError.unconfirmed }
+        }, warmth: {
+            guard warmAvailable else { throw NightShiftError.unavailable }
+            return warmth
+        }, writeWarmth: { on, old in
+            guard warmth == old else { throw NightShiftError.unconfirmed }; warmth = state(on)
+        })
+        let ui = StatusBarController(controller: display, strings: strings, evening: evening)
+        defer { NSStatusBar.system.removeStatusItem(ui.statusItem) }
+        ui.menu.delegate?.menuNeedsUpdate?(ui.menu)
+        func click(_ title: String) {
+            guard let i = ui.menu.items.firstIndex(where: { $0.title == title && $0.isEnabled }) else { require(false, "missing \(title)"); return }
+            ui.menu.performActionForItem(at: i)
+        }
+        let warmTitle = localized ? "Тёплый экран" : "Warm Display"
+        let eveningTitle = localized ? "Вечерний режим" : "Evening Mode"
+        let endTitle = localized ? "Завершить вечерний режим" : "End Evening Mode"
+        let settingsTitle = localized ? "Настройки" : "Settings"
+        let scheduleTitle = localized ? "Расписание вечернего режима…" : "Evening Schedule…"
+        require(backend.writes == 0 && !warmth.enabled, "evening is opt-in")
+        click(warmTitle)
+        require(warmth.enabled && backend.writes == 0, "menu Night Shift ignores grayscale")
+        click(warmTitle)
+        click(eveningTitle)
+        require(warmth.enabled && backend.value == .grayscale, "evening action applies both filters")
+        ui.statusItem.button?.performClick(nil)
+        require(warmth.enabled && backend.value == .color, "left click only changes grayscale")
+        click(endTitle)
+        require(!warmth.enabled && backend.value == .color, "ending evening leaves manual grayscale state intact")
+        let settings = ui.menu.items.first { $0.title == settingsTitle }?.submenu
+        require(settings?.items.contains { $0.title == scheduleTitle && $0.isEnabled } == true, "settings contain an editable schedule")
+        warmAvailable = false
+        ui.menu.delegate?.menuNeedsUpdate?(ui.menu)
+        require(ui.menu.items.first(where: { $0.title == eveningTitle })?.isEnabled == false, "unavailable Night Shift disables the combined action")
+        ui.statusItem.button?.performClick(nil)
+        require(backend.value == .grayscale && !warmth.enabled, "old shortcut path survives unsupported Night Shift")
+        print("PASS: \(localized ? "ru" : "en") evening actions, isolated grayscale, unavailable fallback, and schedule menu")
     }
 }

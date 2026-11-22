@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0-alpha.1 (build 7)
+
+- Add an independent **Warm Display** toggle for Night Shift and an **Evening Mode** that starts both effects.
+- Add an opt-in daily schedule. Manual changes are not reapplied in the same interval, and the app does not edit macOS's Night Shift schedule or warmth.
+
 ## 0.3.0-alpha.1 (build 6)
 
 - Add a single 25-minute grayscale session. The timer restores color, can be ended early, and is cancelled by a successful manual toggle or by quitting the app.

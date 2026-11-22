@@ -4,7 +4,7 @@
 
 A small native macOS menu bar utility that switches the entire display between color and grayscale. No main window. No Dock icon. No Electron.
 
-[Русский](README.ru.md) · [Download alpha](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.3.0-alpha.1) · [Report a bug](https://github.com/AstralVoid736/Monochrome/issues/new/choose)
+[Русский](README.ru.md) · [Download alpha](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.4.0-alpha.1) · [Report a bug](https://github.com/AstralVoid736/Monochrome/issues/new/choose)
 
 ![Animated illustration: click the menu bar circle to switch to grayscale, then click it again to restore color](docs/assets/demo.gif)
 
@@ -12,11 +12,11 @@ A small native macOS menu bar utility that switches the entire display between c
 
 ## Download and use
 
-1. Download **`Monochrome-0.3.0-build6-universal.zip`** from the [release page](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.3.0-alpha.1), not GitHub's “Source code” archive.
+1. Download **`Monochrome-0.4.0-build7-universal.zip`** from the [release page](https://github.com/AstralVoid736/Monochrome/releases/tag/v0.4.0-alpha.1), not GitHub's “Source code” archive.
 2. Quit any older copy first. Unzip the download and open `Monochrome.app`.
 3. Press **Control + Command + 1** or click the circle in the menu bar to switch modes. Right-click the circle for the menu and Quit.
 
-The app does not change the filter at startup. **Quitting leaves the current system filter in place.** Switch back to color before quitting, or open the app again to switch back.
+With the daily schedule off, Monochrome does not change display colors at startup. Quitting ends Evening Mode but leaves manual filter settings in place.
 
 The experimental GitHub download is not notarized and can fail macOS's Gatekeeper check even when its checksum and ad-hoc signature are valid. Do not disable Gatekeeper. Build locally from source instead if the download is blocked. There is no installer, account or subscription.
 
@@ -32,9 +32,11 @@ Version 0.1.1 and later prevent a second copy of the app from adding another men
 
 In the right-click menu, open **Settings → Keyboard Shortcut**. Choose `Control–Command–2`, `Control–Command–3`, or **Off**. The choice is saved. If macOS refuses a replacement, Monochrome keeps the current binding and shows the problem in the menu.
 
-**Timer:** from color mode, choose **Grayscale for 25 Minutes**. Monochrome restores color when the timer ends or when you choose **End Timer and Restore Color**. A successful manual toggle also cancels the timer. Quitting cancels it without changing the display.
+**Timer:** from color mode, choose **Grayscale for 25 Minutes**. Monochrome restores color when the timer ends or when you choose **End Timer and Restore Color**. A successful manual toggle also cancels the timer. Quitting cancels the timer without restoring color on the timer’s behalf.
 
 **Launch at login:** put `Monochrome.app` in Applications, open it once, then right-click the menu bar icon and select **Settings → Launch at Login**. When enabled, macOS opens the app after you sign in, without changing the current display filter. To disable it, select the checked item again. If the menu offers to open System Settings, review the app under Login Items there.
+
+**Evening Mode:** right-click the menu bar icon for **Warm Display** (Night Shift) or **Evening Mode** (both effects). Under **Settings → Evening Schedule…**, opt into a daily start and end time while Monochrome is running. The schedule starts disabled. Manual changes take precedence until the next boundary. Monochrome does not edit the system Night Shift schedule or temperature. An active system Night Shift schedule prevents Monochrome from starting both filters automatically. Ending Evening Mode or quitting releases only unchanged effects that the mode itself enabled. The new Night Shift path uses a runtime-checked private macOS API and can be unavailable. Sliders are not included.
 
 ## Compatibility
 

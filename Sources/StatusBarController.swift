@@ -22,6 +22,13 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private let strings: Bundle
     private let hotKey: HotKeyController?
     private let loginItem: (any LoginItemService)?
+    private let evening: EveningController?
+    private let warmthAction = NSMenuItem(title: "", action: #selector(toggleWarmth), keyEquivalent: "")
+    private let eveningAction = NSMenuItem(title: "", action: #selector(toggleEvening), keyEquivalent: "")
+    private let eveningStatus = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let hoursAction = NSMenuItem(title: "", action: #selector(editEveningHours), keyEquivalent: "")
+    private var eveningTimer: Timer?
+    private var manualEveningFailure = false
     private let loginAction = NSMenuItem(title: "", action: #selector(changeLoginItem), keyEquivalent: "")
     private let loginError = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private var loginFailureStatus: SMAppService.Status?
@@ -33,18 +40,28 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private var lastTimerError: String?
 
     init(controller: GrayscaleController, strings: Bundle = .main, hotKey: HotKeyController? = nil,
-         focusTimer: FocusTimerController? = nil, loginItem: (any LoginItemService)? = nil) {
+         focusTimer: FocusTimerController? = nil, loginItem: (any LoginItemService)? = nil,
+         evening: EveningController? = nil) {
         self.controller = controller
         self.focusTimer = focusTimer ?? FocusTimerController(display: controller)
         self.strings = strings
         self.hotKey = hotKey
         self.loginItem = loginItem
+        self.evening = evening
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
         let toggleItem = NSMenuItem(title: text("Enable Grayscale"), action: #selector(toggle), keyEquivalent: "")
         toggleItem.target = self
         toggleItem.tag = 1
         menu.addItem(toggleItem)
+        if evening != nil {
+            warmthAction.target = self
+            eveningAction.target = self
+            eveningStatus.isEnabled = false
+            menu.addItem(warmthAction)
+            menu.addItem(eveningAction)
+            menu.addItem(eveningStatus)
+        }
         timerAction.target = self
         menu.addItem(timerAction)
         timerStatus.isEnabled = false
@@ -74,7 +91,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     private func addSettingsMenu() {
-        guard hotKey != nil || loginItem != nil else { return }
+        guard hotKey != nil || loginItem != nil || evening != nil else { return }
         let title = text("Settings")
         let settings = NSMenu(title: title)
         settings.autoenablesItems = false
@@ -103,6 +120,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             shortcutItem.submenu = shortcutMenu
             settings.addItem(shortcutItem)
         }
+        if evening != nil {
+            hoursAction.target = self
+            hoursAction.title = text("Evening Schedule…")
+            settings.addItem(hoursAction)
+        }
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         item.submenu = settings
         menu.addItem(item)
@@ -113,6 +135,25 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         refreshLoginItem()
     }
     func stopTimer() { focusTimer.cancel() }
+
+    func updateEveningClock() {
+        eveningTimer?.invalidate()
+        eveningTimer = nil
+        if let next = evening?.update() {
+            let timer = Timer(fire: next, interval: 0, repeats: false) { [weak self] _ in
+                MainActor.assumeIsolated { self?.updateEveningClock() }
+            }
+            eveningTimer = timer
+            RunLoop.main.add(timer, forMode: .common)
+        }
+        refresh()
+    }
+
+    func stopEvening() {
+        eveningTimer?.invalidate()
+        eveningTimer = nil
+        evening?.shutdown()
+    }
 
     @objc private func selectShortcut(_ sender: NSMenuItem) {
         guard HotKeyChoice.allCases.indices.contains(sender.tag) else { return }
@@ -167,6 +208,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
         timerStatus.title = timerMessage ?? ""
         timerStatus.isHidden = timerMessage == nil
+        refreshEvening(canUseGrayscale: toggleItem.isEnabled)
         if let hotKey {
             let status = String(format: text("Active: %@"), text(hotKey.active.label))
             switch hotKey.failure {
@@ -186,6 +228,78 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
         if let timerMessage {
             button.toolTip = [button.toolTip, timerMessage].compactMap { $0 }.joined(separator: "\n")
+        }
+    }
+
+    private func refreshEvening(canUseGrayscale: Bool) {
+        guard let evening else { return }
+        let warm = try? evening.warmth()
+        warmthAction.title = text(warm == nil ? "Warm Display Unavailable" : "Warm Display")
+        warmthAction.state = warm?.enabled == true ? .on : .off
+        warmthAction.isEnabled = warm?.enabled == true || warm?.canActivate == true
+        eveningAction.title = text(evening.isEvening ? "End Evening Mode" : "Evening Mode")
+        eveningAction.isEnabled = evening.isEvening || (warmthAction.isEnabled && canUseGrayscale)
+        hoursAction.state = evening.hours == nil ? .off : .on
+        let status: String?
+        switch evening.problem {
+        case .systemSchedule: status = text("Monochrome schedule paused: macOS Night Shift has its own schedule.")
+        case .unavailable, .changeFailed: status = text("macOS did not confirm the display change.")
+        case nil: status = manualEveningFailure ? text("macOS did not confirm the display change.") : nil
+        }
+        eveningStatus.title = status ?? ""
+        eveningStatus.isHidden = status == nil
+    }
+
+    @objc private func toggleWarmth() {
+        do { try evening?.toggleWarmth(); manualEveningFailure = false }
+        catch { manualEveningFailure = true }
+        refresh()
+    }
+
+    @objc private func toggleEvening() {
+        do { try evening?.toggleEvening(); manualEveningFailure = false }
+        catch { manualEveningFailure = true }
+        refresh()
+    }
+
+    @objc private func editEveningHours() {
+        guard let evening else { return }
+        let hours = evening.hours ?? .suggested
+        let enabled = NSButton(checkboxWithTitle: text("Use a daily schedule"), target: nil, action: nil)
+        enabled.state = evening.hours == nil ? .off : .on
+        let start = NSTextField(string: EveningHours.label(hours.start))
+        let end = NSTextField(string: EveningHours.label(hours.end))
+        start.setAccessibilityLabel(text("Start (HH:mm)"))
+        end.setAccessibilityLabel(text("End (HH:mm)"))
+        let grid = NSGridView(views: [[NSTextField(labelWithString: text("Start (HH:mm)")), start],
+                                     [NSTextField(labelWithString: text("End (HH:mm)")), end]])
+        grid.rowSpacing = 8
+        let content = NSStackView(views: [enabled, grid])
+        content.orientation = .vertical
+        content.alignment = .leading
+        content.spacing = 12
+        content.setFrameSize(content.fittingSize)
+        let alert = NSAlert()
+        alert.messageText = text("Evening Schedule…")
+        alert.informativeText = text("Set both filters on a daily schedule while Monochrome is running.")
+        alert.accessoryView = content
+        alert.addButton(withTitle: text("Save"))
+        alert.addButton(withTitle: text("Cancel"))
+        while alert.runModal() == .alertFirstButtonReturn {
+            if enabled.state == .off {
+                manualEveningFailure = false
+                evening.configure(nil)
+                updateEveningClock()
+                return
+            }
+            if let first = EveningHours.minute(start.stringValue), let last = EveningHours.minute(end.stringValue),
+               let hours = EveningHours(start: first, end: last) {
+                manualEveningFailure = false
+                evening.configure(hours)
+                updateEveningClock()
+                return
+            }
+            alert.informativeText = text("Enter two different times in 24-hour HH:mm format.")
         }
     }
 
@@ -247,7 +361,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     @objc private func toggleTimer() {
         do {
             if focusTimer.isActive { try focusTimer.endEarly() }
-            else { _ = try focusTimer.start() }
+            else if try focusTimer.start() { evening?.releaseGrayControl() }
             lastTimerError = nil
         } catch {
             lastTimerError = text(focusTimer.isActive ? "Could not end the timer." : "Could not start the timer.")
@@ -258,6 +372,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private func switchDisplay(showAlert: Bool) {
         do {
             try focusTimer.toggleManually()
+            evening?.releaseGrayControl()
             lastToggleError = nil
             lastTimerError = nil
             refresh()
@@ -278,7 +393,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         let alert = NSAlert()
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         alert.messageText = version.map { "Monochrome \($0)" } ?? "Monochrome"
-        alert.informativeText = text("Left-click the menu bar icon to switch between color and grayscale. Right-click to open the menu. Quitting does not restore color.\n\nMonochrome uses undocumented macOS APIs and may not work on future versions.")
+        alert.informativeText = text("Left-click the menu bar icon to toggle grayscale. Right-click for Night Shift, Evening Mode, and settings. Monochrome uses undocumented macOS APIs and may not work on future versions.")
         alert.addButton(withTitle: text("Close"))
         alert.runModal()
     }

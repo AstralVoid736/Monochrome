@@ -9,7 +9,7 @@ fi
 APP="${MONOCHROME_APP_PATH:-dist/Monochrome.app}"
 if [[ "$APP" != *.app ]]; then printf 'Output must end in .app\n' >&2; exit 2; fi
 mkdir -p .build "$APP/Contents/MacOS"
-SOURCES=(Sources/GrayscaleController.swift Sources/NativeGrayscaleBackend.swift Sources/SingleInstanceLock.swift Sources/HotKeyController.swift Sources/NativeHotKeyRegistrar.swift Sources/FocusTimerController.swift Sources/StatusBarController.swift Sources/MonochromeApp.swift)
+SOURCES=(Sources/GrayscaleController.swift Sources/NativeGrayscaleBackend.swift Sources/SingleInstanceLock.swift Sources/HotKeyController.swift Sources/NativeHotKeyRegistrar.swift Sources/FocusTimerController.swift Sources/NativeNightShift.swift Sources/EveningController.swift Sources/StatusBarController.swift Sources/MonochromeApp.swift)
 compile() {
   xcrun swiftc -O -whole-module-optimization -warnings-as-errors -target "$1-apple-macos13.0" "${SOURCES[@]}" -framework AppKit -framework Carbon -o ".build/Monochrome-$1"
 }

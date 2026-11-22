@@ -14,7 +14,9 @@ xcrun swiftc -warnings-as-errors Sources/HotKeyController.swift Tests/HotKeyTest
 .build/hotkey-tests
 xcrun swiftc -warnings-as-errors Sources/GrayscaleController.swift Sources/FocusTimerController.swift Tests/FocusTimerTests.swift -o .build/focus-timer-tests
 .build/focus-timer-tests
-xcrun swiftc -warnings-as-errors Sources/GrayscaleController.swift Sources/HotKeyController.swift Sources/FocusTimerController.swift Sources/StatusBarController.swift Tests/UITests.swift -o .build/ui-tests
+xcrun swiftc -warnings-as-errors Sources/NativeNightShift.swift Sources/EveningController.swift Tests/EveningTests.swift -o .build/evening-tests
+.build/evening-tests
+xcrun swiftc -warnings-as-errors Sources/GrayscaleController.swift Sources/HotKeyController.swift Sources/FocusTimerController.swift Sources/NativeNightShift.swift Sources/EveningController.swift Sources/StatusBarController.swift Tests/UITests.swift -o .build/ui-tests
 .build/ui-tests
 if [[ "$MODE" == "--native" ]]; then
   printf 'Native test temporarily changes your real display filter and restores its snapshot.\n'
